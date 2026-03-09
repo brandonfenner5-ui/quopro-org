@@ -7,8 +7,3 @@ export default function Home() {
   );
 }
 // Removed leftover JSX from previous implementation
-        </div>
-      </main>
-    </div>
-  );
-}
