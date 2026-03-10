@@ -36,10 +36,10 @@ export default function AuthCallback() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black px-6">
-      <div className="w-full max-w-md bg-white dark:bg-zinc-900 p-8 rounded-xl shadow">
-        {/* your form elements here */}
-      </div>
+  <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black px-6">
+    <div className="w-full max-w-md bg-white dark:bg-zinc-900 p-8 rounded-xl shadow">
+      {/* your form elements here */}
     </div>
-  );
+  </div>
+);
 }
