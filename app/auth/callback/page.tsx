@@ -1,81 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 
-export default function SignupPage() {
+export default function AuthCallback() {
   const router = useRouter();
-  const supabase = createClient();
 
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-  });
+  useEffect(() => {
+    const run = async () => {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
 
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
 
-  const handleChange = (e: any) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession({ code });
+        if (error) {
+          console.error("Session exchange failed:", error);
+          return;
+        }
+      }
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg("");
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
 
-    const { email, password, firstName, lastName } = form;
+      if (!accessToken) {
+        console.error("No access token after session exchange");
+        return;
+      }
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-        },
-      },
-    });
+      await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/sync-profile`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ prefer: "auth" }),
+        }
+      );
 
-    if (error) {
-      setErrorMsg(error.message);
-      setLoading(false);
-      return;
-    }
+      router.push("/dashboard");
+    };
 
-    // If your profile creation trigger is active, it runs automatically here.
-    router.push("/dashboard");
-  };
+    run();
+  }, [router]);
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black px-6">
-      <div className="w-full max-w-md bg-white dark:bg-zinc-900 p-8 rounded-xl shadow">
-        <h1 className="text-3xl font-semibold text-black dark:text-white mb-6">
-          Create your account
-        </h1>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            name="firstName"
-            placeholder="First Name"
-            className="p-3 rounded border border-zinc-300 dark:border-zinc-700 bg-transparent"
-            onChange={handleChange}
-          />
-
-          <input
-            name="lastName"
-            placeholder="Last Name"
-            className="p-3 rounded border border-zinc-300 dark:border-zinc-700 bg-transparent"
-            onChange={handleChange}
-          />
-
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            className="p-3 rounded border border-zinc-300 dark:border-zinc-700 bg-transparent"
-            onChange={handleChange}
-          />
+  return <p>Signing you in…</p>;
+}
